@@ -5,64 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mind-Wave Academy | Authority Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --brand-purple: #582C83; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fdfbff; min-height: 100vh; color: #1a1a1a; }
         .glass-panel { background: white; border: 1px solid #e2d9f3; box-shadow: 0 10px 30px rgba(88, 44, 131, 0.05); }
         .brand-gradient { background: linear-gradient(135deg, var(--brand-purple) 0%, #3b0a7d 100%); }
-        .btn-purple { background: var(--brand-purple); color: white; font-weight: 800; transition: all 0.2s; border: none; cursor: pointer; }
-        .btn-purple:hover { filter: brightness(1.2); transform: translateY(-1px); }
-        .form-input { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #f0eaff; outline: none; font-weight: 600; }
+        .btn-purple { background: var(--brand-purple); color: white; font-weight: 800; border: none; cursor: pointer; transition: 0.2s; }
+        .btn-purple:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .form-input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #e2d9f3; outline: none; font-size: 13px; font-weight: 600; }
         
         /* MIND LOGO SPINNER */
-        #loader { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
+        #loader { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.92); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
         .mind-logo-spin { width: 60px; height: 60px; border: 6px solid #f3f3f3; border-top: 6px solid var(--brand-purple); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        @media print {
-            .no-print { display: none !important; }
-            .print-page { page-break-after: always; padding: 2cm; border: 8px solid #582C83; min-height: 28cm; }
-        }
+        /* EXCEL STYLE TABLE */
+        .excel-table { width: 100%; border-collapse: collapse; font-size: 13px; background: white; }
+        .excel-table th { background: #f8f6ff; color: #582C83; padding: 12px; border: 1px solid #e2d9f3; text-align: left; text-transform: uppercase; font-size: 11px; font-weight: 800; }
+        .excel-table td { padding: 12px; border: 1px solid #e2d9f3; }
+        .row-hover:hover { background-color: #fcfaff; cursor: pointer; }
+
+        @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body class="pb-20">
 
     <div id="loader">
         <div class="mind-logo-spin"></div>
-        <p class="mt-4 font-black text-purple-900 text-xs tracking-widest uppercase">Syncing Mind-Wave Cloud...</p>
+        <p class="mt-4 font-black text-purple-900 text-xs tracking-widest uppercase">Mind-Wave Syncing...</p>
     </div>
 
-    <nav class="brand-gradient text-white p-6 flex flex-col items-center mb-8 no-print shadow-xl">
+    <nav class="brand-gradient text-white p-6 flex flex-col items-center mb-8 shadow-xl no-print">
         <h1 class="text-2xl font-black uppercase italic tracking-tighter">Mind-Wave Academy</h1>
         <p class="text-[10px] tracking-[3px] opacity-80 uppercase">Authority Control System</p>
     </nav>
 
     <div class="container mx-auto px-4 max-w-6xl no-print">
-        <div class="flex justify-between items-center mb-8">
+        <div class="flex flex-wrap justify-between items-center mb-8 gap-4">
             <div class="glass-panel p-1.5 rounded-2xl flex gap-1 shadow-sm">
-                <button onclick="switchTab('student')" class="px-6 py-2 rounded-xl font-bold text-xs">Search</button>
-                <button onclick="loginAs('teacher')" class="px-6 py-2 rounded-xl font-bold text-xs">Teacher</button>
+                <button onclick="switchTab('student')" class="px-6 py-2 rounded-xl font-bold text-xs">Student Portal</button>
+                <button onclick="loginAs('teacher')" class="px-6 py-2 rounded-xl font-bold text-xs">Teacher Login</button>
                 <button onclick="loginAs('admin')" class="px-6 py-2 btn-purple rounded-xl font-bold text-xs shadow-lg">Super Admin</button>
             </div>
-            <button onclick="pullAll()" class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:bg-emerald-600 transition">UPGRADE DATA</button>
+            <button onclick="pullAll()" class="bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition shadow-md">Upgrade (Refresh Cloud Data)</button>
         </div>
 
         <div id="admin-view" class="hidden">
             <div class="glass-panel p-8 rounded-[2.5rem] border-b-[8px] border-purple-900 shadow-2xl">
                 <div class="flex justify-between items-center mb-8">
                     <h2 class="text-2xl font-black text-purple-900 uppercase">Super Admin Hub</h2>
-                    <button onclick="logout()" class="text-red-500 text-xs font-bold">LOGOUT</button>
+                    <button onclick="logout()" class="text-red-500 text-xs font-bold uppercase tracking-widest">Logout</button>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-8">
-                    <button onclick="renderTask('enroll')" class="p-4 bg-white border-2 rounded-2xl font-black text-[9px] text-purple-900 uppercase">Enroll Student</button>
-                    <button onclick="renderTask('teacher')" class="p-4 bg-white border-2 rounded-2xl font-black text-[9px] text-purple-900 uppercase">Add Teacher</button>
-                    <button onclick="renderTask('subjects')" class="p-4 bg-purple-900 text-white rounded-2xl font-black text-[9px] uppercase shadow-lg">Subjects</button>
-                    <button onclick="renderTask('directory')" class="p-4 bg-purple-50 rounded-2xl font-black text-[9px] text-purple-900 uppercase">Student Reg</button>
-                    <button onclick="renderTask('teacher-reg')" class="p-4 bg-purple-50 rounded-2xl font-black text-[9px] text-purple-900 uppercase">Teacher Reg</button>
-                    <button onclick="renderTask('manage-results')" class="p-4 bg-purple-100 rounded-2xl font-black text-[9px] text-purple-900 uppercase">Results</button>
+                    <button onclick="renderTask('enroll')" class="p-4 bg-white border-2 rounded-2xl font-black text-[9px] uppercase hover:border-purple-900 transition">Enroll Student</button>
+                    <button onclick="renderTask('teacher')" class="p-4 bg-white border-2 rounded-2xl font-black text-[9px] uppercase hover:border-purple-900 transition">Add Teacher</button>
+                    <button onclick="renderTask('subjects')" class="p-4 bg-purple-900 text-white rounded-2xl font-black text-[9px] uppercase shadow-lg">Subjects List</button>
+                    <button onclick="renderTask('directory')" class="p-4 bg-purple-50 rounded-2xl font-black text-[9px] uppercase text-purple-900">Student Reg</button>
+                    <button onclick="renderTask('teacher-reg')" class="p-4 bg-purple-50 rounded-2xl font-black text-[9px] uppercase text-purple-900">Teacher Reg</button>
+                    <button onclick="renderTask('manage-results')" class="p-4 bg-purple-100 rounded-2xl font-black text-[9px] uppercase text-purple-900 border border-purple-200">Manage Results</button>
                 </div>
-                <div id="task-display-area" class="p-6 bg-gray-50/50 rounded-3xl border border-dashed border-purple-200 min-h-[400px]"></div>
+                <div id="task-display-area" class="p-6 bg-white rounded-3xl border border-purple-100 min-h-[400px]"></div>
             </div>
         </div>
 
@@ -72,30 +76,21 @@
                     <div class="glass-panel p-6 rounded-[2rem] border-t-4 border-purple-900">
                         <h2 class="text-sm font-black text-purple-900 mb-4 uppercase">Selection</h2>
                         <div class="space-y-3">
-                            <select id="teacher-matrix" onchange="loadBulkList()" class="form-input text-sm"></select>
-                            <input type="date" id="test-date" onchange="loadBulkList()" class="form-input text-sm">
-                            <input type="number" id="marks-tot" value="100" class="form-input text-sm">
+                            <select id="teacher-matrix" onchange="loadBulkList()" class="form-input"></select>
+                            <input type="date" id="test-date" onchange="loadBulkList()" class="form-input">
+                            <input type="number" id="marks-tot" value="100" class="form-input" placeholder="Total Marks">
                         </div>
                     </div>
-                    <div class="glass-panel p-6 rounded-[2rem] bg-purple-50 text-center">
-                        <button id="save-btn" onclick="commitBulkResults()" class="w-full btn-purple py-4 rounded-xl text-xs shadow-lg mb-4">SAVE & UPLOAD</button>
-                        <hr class="mb-4">
-                        <button onclick="logout()" class="text-red-500 text-[10px] font-bold uppercase">Logout</button>
-                    </div>
+                    <button id="save-btn" onclick="commitBulkResults()" class="w-full btn-purple py-4 rounded-xl text-xs shadow-lg uppercase tracking-widest">Save & Upload</button>
+                    <p class="text-[9px] text-center text-gray-400 font-bold px-4">Cloud will not sync until you press Save.</p>
                 </div>
-
                 <div class="lg:col-span-3">
                     <div class="glass-panel p-8 rounded-[2.5rem]">
-                        <h2 class="text-xl font-black text-purple-900 mb-6 uppercase">Bulk Entry</h2>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead class="text-[10px] uppercase text-gray-400 border-b">
-                                    <tr><th class="pb-3">Roll</th><th class="pb-3">Name</th><th class="pb-3 w-32">Obtained</th></tr>
-                                </thead>
-                                <tbody id="bulk-student-body"></tbody>
-                            </table>
-                            <div id="bulk-empty-msg" class="py-20 text-center text-gray-400 font-bold italic">Select Class & Date</div>
-                        </div>
+                        <table class="excel-table">
+                            <thead><tr><th>Roll No</th><th>Student Name</th><th class="w-32">Marks Obtained</th></tr></thead>
+                            <tbody id="bulk-student-body"></tbody>
+                        </table>
+                        <div id="bulk-empty-msg" class="py-20 text-center text-gray-400 font-bold italic">Select Class & Date to view list</div>
                     </div>
                 </div>
             </div>
@@ -103,39 +98,28 @@
 
         <div id="student-view" class="max-w-xl mx-auto">
             <div class="glass-panel p-10 rounded-[3rem] border-t-[12px] border-purple-900">
-                <h2 class="text-3xl font-black text-center text-purple-900 mb-8 uppercase">Check Results</h2>
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <select id="query-class" class="form-input"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select>
-                    <input type="text" id="query-roll" placeholder="Roll No" class="form-input text-center">
+                <h2 class="text-3xl font-black text-center text-purple-900 mb-8 uppercase">Result Search</h2>
+                <div class="space-y-4">
+                    <input type="text" id="query-roll" placeholder="Roll Number" class="form-input text-center text-lg py-4">
+                    <select id="query-class" class="form-input text-center"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select>
+                    <button onclick="getStudentResults()" class="w-full btn-purple py-5 rounded-2xl text-xl shadow-lg uppercase">Generate Marksheet</button>
                 </div>
-                <div class="grid grid-cols-2 gap-3 mb-6">
-                    <select id="query-subject" class="form-input"></select>
-                    <input type="date" id="query-date" class="form-input">
-                </div>
-                <button onclick="getStudentResults()" class="w-full btn-purple py-5 rounded-2xl text-xl shadow-lg">GENERATE</button>
                 <div id="result-timeline" class="mt-8"></div>
-                <div id="print-single-container" class="hidden mt-4"><button onclick="window.print()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold uppercase text-xs">Print</button></div>
             </div>
         </div>
     </div>
-
-    <div id="print-zone" class="hidden print:block"></div>
 
     <script>
         const FIREBASE_URL = "https://mind-wave-portal-default-rtdb.firebaseio.com/"; 
         let db_students = [], db_teachers = [], db_results = [], db_subjects = [];
         let sessionUser = null;
-        let isDataModified = false; // Guard Variable
+        let isDataModified = false;
 
+        // SHOW SPINNER
         function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
 
-        // Alert if teacher tries to leave with unsaved info
-        window.addEventListener('beforeunload', (e) => {
-            if (isDataModified) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        });
+        // ALERT IF LEAVING WITHOUT SAVING
+        window.onbeforeunload = function() { if(isDataModified) return "Unsaved marks will be lost!"; };
 
         async function cloudSync(path, data = null, method = 'GET') {
             const url = `${FIREBASE_URL}/${path}.json`;
@@ -143,7 +127,18 @@
                 const options = method === 'PUT' ? { method: 'PUT', body: JSON.stringify(data) } : {};
                 const res = await fetch(url, options);
                 return method === 'GET' ? (await res.json() || []) : true;
-            } catch (e) { console.error(e); return []; }
+            } catch (e) { return []; }
+        }
+
+        async function pullAll() {
+            showLoader(true);
+            db_students = await cloudSync('mw_students') || [];
+            db_teachers = await cloudSync('mw_teachers') || [];
+            db_results = await cloudSync('mw_results') || [];
+            db_subjects = await cloudSync('mw_subjects') || [];
+            if(db_subjects.length === 0) db_subjects = ["Physics", "Chemistry", "Math", "English"];
+            refreshUI();
+            showLoader(false);
         }
 
         async function saveAll() {
@@ -152,28 +147,12 @@
             await cloudSync('mw_teachers', db_teachers, 'PUT');
             await cloudSync('mw_results', db_results, 'PUT');
             await cloudSync('mw_subjects', db_subjects, 'PUT');
-            isDataModified = false; // Reset guard
-            showLoader(false);
-        }
-
-        async function pullAll() {
-            showLoader(true);
-            db_students = await cloudSync('mw_students');
-            db_teachers = await cloudSync('mw_teachers');
-            db_results = await cloudSync('mw_results');
-            db_subjects = await cloudSync('mw_subjects');
-            if(!db_subjects || db_subjects.length === 0) db_subjects = ["Physics", "Chemistry", "Math", "English", "Biology"];
-            
-            if(!document.getElementById('teacher-view').classList.contains('hidden')) {
-                document.getElementById('teacher-matrix').innerHTML = sessionUser.auth.map(a => `<option value="${a.class}|${a.subject}">${a.class} - ${a.subject}</option>`).join('');
-            } else {
-                refreshUI();
-            }
+            isDataModified = false;
             showLoader(false);
         }
 
         function switchTab(t) { 
-            if(isDataModified && !confirm("You have unsaved marks! Leave anyway?")) return;
+            if(isDataModified && !confirm("Discard unsaved changes?")) return;
             sessionUser = null; 
             isDataModified = false;
             refreshUI(); 
@@ -192,42 +171,140 @@
 
         function refreshUI() {
             document.querySelectorAll('#admin-view, #teacher-view, #student-view').forEach(v => v.classList.add('hidden'));
-            const qSub = document.getElementById('query-subject');
-            if(qSub) qSub.innerHTML = `<option value="all">Grand Total</option>` + db_subjects.map(s => `<option>${s}</option>`).join('');
-
-            if(sessionUser?.type === 'admin') {
-                document.getElementById('admin-view').classList.remove('hidden');
-            } else if(sessionUser?.type === 'teacher') {
+            if(sessionUser?.type === 'admin') document.getElementById('admin-view').classList.remove('hidden');
+            else if(sessionUser?.type === 'teacher') {
                 document.getElementById('teacher-view').classList.remove('hidden');
                 document.getElementById('teacher-matrix').innerHTML = sessionUser.auth.map(a => `<option value="${a.class}|${a.subject}">${a.class} - ${a.subject}</option>`).join('');
-            } else { document.getElementById('student-view').classList.remove('hidden'); }
+            } else document.getElementById('student-view').classList.remove('hidden');
         }
 
+        // CSV EXPORTER
+        function downloadCSV() {
+            const date = document.getElementById('filter-date').value;
+            const sub = document.getElementById('filter-sub').value;
+            let filtered = db_results;
+            if(date) filtered = filtered.filter(r => r.date === date);
+            if(sub) filtered = filtered.filter(r => r.subject === sub);
+
+            let csv = "Roll,Name,Class,Subject,Date,Obtained,Total,Teacher\n";
+            filtered.forEach(r => csv += `${r.roll},${r.name},${r.class},${r.subject},${r.date},${r.ob},${r.tot},${r.teacher}\n`);
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `MindWave_Report_${new Date().getTime()}.csv`;
+            a.click();
+        }
+
+        // PDF EXPORTER
+        function downloadPDF(id, name) {
+            const element = document.getElementById(id);
+            const opt = { margin: 0.5, filename: name+'.pdf', image: { type:'jpeg', quality:0.98 }, html2canvas: { scale:2 }, jsPDF: { unit:'in', format:'letter', orientation:'portrait' } };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function renderTask(task) {
+            const area = document.getElementById('task-display-area');
+            if(task === 'manage-results') {
+                area.innerHTML = `
+                    <div class="mb-6 flex flex-col md:flex-row justify-between items-end gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 flex-1 w-full">
+                            <div><label class="text-[9px] font-bold opacity-40">DATE</label><input type="date" id="filter-date" onchange="filterResults()" class="form-input"></div>
+                            <div><label class="text-[9px] font-bold opacity-40">SUBJECT</label><select id="filter-sub" onchange="filterResults()" class="form-input"><option value="">All Subjects</option>${db_subjects.map(s=>`<option>${s}</option>`).join('')}</select></div>
+                            <div><label class="text-[9px] font-bold opacity-40">TEACHER</label><select id="filter-teacher" onchange="filterResults()" class="form-input"><option value="">All Teachers</option>${db_teachers.map(t=>`<option>${t.name}</option>`).join('')}</select></div>
+                        </div>
+                        <button onclick="downloadCSV()" class="bg-black text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase shadow-lg">Export CSV</button>
+                    </div>
+                    <div id="results-excel-container"></div>
+                `;
+                filterResults();
+            } else if(task === 'enroll') {
+                area.innerHTML = `<div class="max-w-md mx-auto"><h3 class="font-black mb-4 uppercase text-center">Enroll New Student</h3><input id="s-name" placeholder="Full Name" class="form-input mb-3"><input id="s-roll" placeholder="Roll No" class="form-input mb-3"><select id="s-class" class="form-input mb-4"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select><div class="grid grid-cols-2 gap-2 mb-6">${db_subjects.map(s => `<label class="text-xs font-bold"><input type="checkbox" name="s-subs" value="${s}"> ${s}</label>`).join('')}</div><button onclick="saveStudent()" class="w-full btn-purple p-4 rounded-xl">SAVE STUDENT</button></div>`;
+            } else if(task === 'teacher') {
+                area.innerHTML = `<div class="max-w-md mx-auto"><h3 class="font-black mb-4 uppercase text-center">Register Teacher</h3><input id="t-name" placeholder="Name" class="form-input mb-3"><input id="t-pass" type="password" placeholder="Pass" class="form-input mb-3"><select id="t-class" class="form-input mb-3"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select><select id="t-sub" class="form-input mb-4">${db_subjects.map(s => `<option>${s}</option>`).join('')}</select><button onclick="saveTeacher()" class="w-full btn-purple p-4 rounded-xl uppercase">Register</button></div>`;
+            } else if(task === 'directory') {
+                area.innerHTML = db_students.map((s,i) => `<div class="p-4 border rounded-2xl mb-2 flex justify-between items-center bg-gray-50"><div><b>${s.name}</b> (${s.roll})</div><button onclick="removeItem('student',${i})" class="text-red-500 font-bold">Delete</button></div>`).join('');
+            }
+        }
+
+        function filterResults() {
+            const date = document.getElementById('filter-date').value;
+            const sub = document.getElementById('filter-sub').value;
+            const teacher = document.getElementById('filter-teacher').value;
+            let filtered = db_results;
+            if(date) filtered = filtered.filter(r => r.date === date);
+            if(sub) filtered = filtered.filter(r => r.subject === sub);
+            if(teacher) filtered = filtered.filter(r => r.teacher === teacher);
+
+            const uniqueRolls = [...new Set(filtered.map(r => r.roll))];
+            const container = document.getElementById('results-excel-container');
+
+            container.innerHTML = `
+                <table class="excel-table shadow-lg rounded-xl overflow-hidden">
+                    <thead><tr><th>Roll</th><th>Student Name</th><th>Record Count</th><th>View</th></tr></thead>
+                    <tbody>
+                        ${uniqueRolls.map(roll => {
+                            const sInfo = db_students.find(s => s.roll === roll) || {name: "N/A"};
+                            const count = filtered.filter(r => r.roll === roll).length;
+                            return `
+                                <tr class="row-hover" onclick="showStudentDetail('${roll}')">
+                                    <td class="font-bold">${roll}</td>
+                                    <td class="font-black text-purple-900">${sInfo.name}</td>
+                                    <td>${count} Entry(s)</td>
+                                    <td class="text-blue-600 font-bold text-[10px]">OPEN</td>
+                                </tr>
+                                <tr id="detail-${roll}" class="hidden bg-slate-50"><td colspan="4" id="detail-box-${roll}" class="p-6"></td></tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function showStudentDetail(roll) {
+            const row = document.getElementById(`detail-${roll}`);
+            const box = document.getElementById(`detail-box-${roll}`);
+            row.classList.toggle('hidden');
+            if(row.classList.contains('hidden')) return;
+
+            const res = db_results.filter(r => r.roll === roll);
+            const sInfo = db_students.find(s => s.roll === roll);
+            let tOb = 0, tTot = 0;
+
+            box.innerHTML = `
+                <div id="pdf-box-${roll}" class="bg-white p-8 border-2 border-purple-900 rounded-3xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-black text-purple-900">ACADEMIC RECORD: ${sInfo.name}</h2>
+                        <button onclick="downloadPDF('pdf-box-${roll}', 'Record_${roll}')" class="bg-red-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase">Save PDF</button>
+                    </div>
+                    <table class="excel-table">
+                        <thead><tr><th>Date</th><th>Subject</th><th>Score</th><th>Teacher</th></tr></thead>
+                        <tbody>
+                            ${res.map(r => {
+                                tOb += parseInt(r.ob); tTot += parseInt(r.tot);
+                                return `<tr><td>${r.date}</td><td>${r.subject}</td><td class="font-bold">${r.ob}/${r.tot}</td><td class="text-[10px]">${r.teacher}</td></tr>`;
+                            }).join('')}
+                        </tbody>
+                        <tfoot class="bg-purple-900 text-white font-bold">
+                            <tr><td colspan="2">OVERALL PERFORMANCE</td><td>${tOb}/${tTot}</td><td>${((tOb/tTot)*100).toFixed(1)}%</td></tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        }
+
+        // TEACHER LOGIC
         function loadBulkList() {
-            if(isDataModified && !confirm("Current input will be cleared. Continue?")) return;
             const matrix = document.getElementById('teacher-matrix').value;
             const date = document.getElementById('test-date').value;
             if(!matrix || !date) return;
-
             const [cls, sub] = matrix.split('|');
             const list = db_students.filter(s => s.class === cls && s.subjects.includes(sub));
-            const tbody = document.getElementById('bulk-student-body');
-            const emptyMsg = document.getElementById('bulk-empty-msg');
-
-            if(list.length === 0) {
-                tbody.innerHTML = "";
-                emptyMsg.classList.remove('hidden');
-            } else {
-                emptyMsg.classList.add('hidden');
-                tbody.innerHTML = list.map(s => `
-                    <tr class="border-b border-gray-50">
-                        <td class="py-4 font-bold text-xs text-purple-900">${s.roll}</td>
-                        <td class="py-4 font-bold text-sm">${s.name}</td>
-                        <td class="py-4"><input type="number" oninput="isDataModified=true" class="bulk-mark-input form-input py-2 text-center" data-roll="${s.roll}" data-name="${s.name}" placeholder="0"></td>
-                    </tr>
-                `).join('');
-                isDataModified = false; // Reset guard for new empty list
-            }
+            document.getElementById('bulk-student-body').innerHTML = list.map(s => `
+                <tr class="border-b"><td>${s.roll}</td><td class="font-bold">${s.name}</td><td><input type="number" class="bulk-mark-input form-input py-1 text-center w-24" data-roll="${s.roll}" data-name="${s.name}" oninput="isDataModified=true"></td></tr>
+            `).join('');
+            document.getElementById('bulk-empty-msg').classList.add('hidden');
         }
 
         async function commitBulkResults() {
@@ -235,104 +312,55 @@
             const date = document.getElementById('test-date').value;
             const total = document.getElementById('marks-tot').value;
             const inputs = document.querySelectorAll('.bulk-mark-input');
-            const btn = document.getElementById('save-btn');
-
-            if(!date || !total) return alert("Select Date and Total Marks first!");
             const [cls, sub] = matrix.split('|');
-            
-            btn.innerText = "UPDATING CLOUD...";
-            btn.disabled = true;
-
             inputs.forEach(input => {
                 if(input.value !== "") {
-                    db_results.push({
-                        roll: input.dataset.roll, name: input.dataset.name,
-                        class: cls, subject: sub, ob: input.value, tot: total, date: date
-                    });
+                    db_results.push({ roll: input.dataset.roll, name: input.dataset.name, class: cls, subject: sub, ob: input.value, tot: total, date: date, teacher: sessionUser.name });
                 }
             });
-
             await saveAll();
-            alert("All Marks Successfully Uploaded!");
-            btn.innerText = "SAVE & UPLOAD";
-            btn.disabled = false;
-            loadBulkList(); // Re-load to clear inputs
+            alert("Database Updated Successfully!");
+            loadBulkList();
         }
 
-        function renderTask(task) {
-            const area = document.getElementById('task-display-area');
-            if(task === 'subjects') {
-                area.innerHTML = `<div class="max-w-md mx-auto"><h3 class="font-black mb-4 uppercase">Subjects</h3><div class="flex gap-2 mb-6"><input id="new-subject-name" placeholder="Name" class="form-input"><button onclick="addSubject()" class="btn-purple px-6 rounded-xl">ADD</button></div><div class="space-y-2">${db_subjects.map((s, idx) => `<div class="flex justify-between bg-white p-3 rounded-xl border"><span>${s}</span><button onclick="removeSubject(${idx})" class="text-red-500 font-bold text-xs">DEL</button></div>`).join('')}</div></div>`;
-            } else if(task === 'enroll') {
-                area.innerHTML = `<div class="max-w-md mx-auto"><h3 class="font-black mb-4">Enroll</h3><input id="s-name" placeholder="Name" class="form-input mb-3"><input id="s-roll" placeholder="Roll" class="form-input mb-3"><select id="s-class" class="form-input mb-4"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select><div class="grid grid-cols-2 gap-2 mb-6">${db_subjects.map(s => `<label class="text-xs font-bold"><input type="checkbox" name="s-subs" value="${s}"> ${s}</label>`).join('')}</div><button onclick="saveStudent()" class="w-full btn-purple p-4 rounded-xl">SAVE</button></div>`;
-            } else if(task === 'directory') {
-                area.innerHTML = `<h3 class="font-black mb-4">Student Reg</h3>` + db_students.map((s, idx) => `<div class="flex justify-between bg-white p-4 rounded-2xl mb-2 border"><div><b>${s.name}</b> (${s.roll})</div><button onclick="removeItem('student', ${idx})" class="text-red-500 font-bold">DEL</button></div>`).join('');
-            } else if(task === 'teacher-reg') {
-                area.innerHTML = `<h3 class="font-black mb-4">Teacher Reg</h3>` + db_teachers.map((t, idx) => `<div class="bg-white p-4 rounded-2xl mb-2 border flex justify-between items-center"><div><b>${t.name}</b></div><button onclick="removeItem('teacher', ${idx})" class="text-red-500 font-bold">DEL</button></div>`).join('');
-            } else if(task === 'teacher') {
-                area.innerHTML = `<div class="max-w-md mx-auto"><h3 class="font-black mb-4">Add Teacher</h3><input id="t-name" placeholder="Name" class="form-input mb-3"><input id="t-pass" type="password" placeholder="Pass" class="form-input mb-3"><select id="t-class" class="form-input mb-3"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select><select id="t-sub" class="form-input mb-4">${db_subjects.map(s => `<option>${s}</option>`).join('')}</select><button onclick="saveTeacher()" class="w-full btn-purple p-4 rounded-xl">ADD</button></div>`;
-            } else if(task === 'manage-results') {
-                area.innerHTML = db_results.map((r, idx) => `<div class="flex justify-between items-center p-3 bg-white rounded-xl mb-2 border"><div class="text-[10px]"><b>${r.name}</b> (${r.class})</div><button onclick="removeItem('result', ${idx})" class="text-red-400 font-bold">✕</button></div>`).join('');
-            }
-        }
-
-        async function addSubject() { const n = document.getElementById('new-subject-name').value; if(n){ db_subjects.push(n); await saveAll(); renderTask('subjects'); } }
-        async function removeSubject(i) { db_subjects.splice(i, 1); await saveAll(); renderTask('subjects'); }
+        // HELPERS
         async function saveStudent() {
             const n = document.getElementById('s-name').value, r = document.getElementById('s-roll').value, c = document.getElementById('s-class').value;
             const subs = Array.from(document.querySelectorAll('input[name="s-subs"]:checked')).map(el => el.value);
-            if(n && r && subs.length > 0) { db_students.push({name:n, roll:r, class:c, subjects: subs}); await saveAll(); renderTask('enroll'); }
+            if(n && r) { db_students.push({name:n, roll:r, class:c, subjects: subs}); await saveAll(); renderTask('enroll'); }
         }
         async function saveTeacher() {
             const n = document.getElementById('t-name').value, p = document.getElementById('t-pass').value, c = document.getElementById('t-class').value, s = document.getElementById('t-sub').value;
-            if(n && p) {
-                let ext = db_teachers.find(t => t.name === n);
-                if(ext) ext.auth.push({class:c, subject:s});
-                else db_teachers.push({name:n, pass:p, auth:[{class:c, subject:s}]});
-                await saveAll();
-            }
+            if(n && p) { db_teachers.push({name:n, pass:p, auth:[{class:c, subject:s}]}); await saveAll(); alert("Teacher Added"); }
         }
+        async function removeItem(t, i) { if(confirm("Confirm Delete?")){ if(t==='student') db_students.splice(i,1); else db_teachers.splice(i,1); await saveAll(); pullAll(); } }
 
         function getStudentResults() {
-            const roll = document.getElementById('query-roll').value, cls = document.getElementById('query-class').value, sub = document.getElementById('query-subject').value;
+            const roll = document.getElementById('query-roll').value, cls = document.getElementById('query-class').value;
             const student = db_students.find(s => s.roll === roll && s.class === cls);
-            if(!student) return alert("Student not found");
-            let results = db_results.filter(r => r.roll === roll && r.class === cls);
-            if(sub !== 'all') results = results.filter(r => r.subject === sub);
-            const container = document.getElementById('result-timeline');
-            let content = `<div class="p-8 bg-white border-2 border-purple-900 rounded-[2rem]"><h2 class="text-xl font-black">${student.name.toUpperCase()}</h2><p class="text-[10px] mb-6">Roll: ${student.roll}</p>`;
-            if(sub === 'all') {
-                let gOb = 0, gTot = 0;
-                student.subjects.forEach(subject => {
-                    let subRes = db_results.filter(r => r.roll === roll && r.subject === subject);
-                    let sOb = subRes.reduce((a, b) => a + parseInt(b.ob || 0), 0), sTot = subRes.reduce((a, b) => a + parseInt(b.tot || 0), 0);
-                    gOb += sOb; gTot += sTot;
-                    content += `<div class="flex justify-between border-b py-2 text-xs"><span>${subject}</span><b>${sOb}/${sTot}</b></div>`;
-                });
-                content += `<div class="mt-6 bg-purple-900 text-white p-4 rounded-xl flex justify-between"><b>TOTAL</b><b>${gOb}/${gTot}</b></div>`;
-            } else {
-                content += results.map(r => `<div class="flex justify-between p-3 bg-purple-50 rounded-lg mb-2"><span>${r.date}</span><b>${r.ob}/${r.tot}</b></div>`).join('');
-            }
-            container.innerHTML = content + `</div>`;
-            document.getElementById('print-single-container').classList.remove('hidden');
-            document.getElementById('print-zone').innerHTML = `<div class="print-page">${content}</div>`;
+            if(!student) return alert("Student not found in this class.");
+            const res = db_results.filter(r => r.roll === roll);
+            document.getElementById('result-timeline').innerHTML = `
+                <div id="student-report-print">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-black text-purple-900 uppercase">Your Marksheet</h3>
+                        <button onclick="downloadPDF('student-report-print', 'Marksheet_${roll}')" class="bg-red-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase">Download PDF</button>
+                    </div>
+                    <div class="bg-white border-4 border-purple-900 p-8 rounded-3xl">
+                        <h2 class="text-2xl font-black">${student.name}</h2>
+                        <p class="font-bold opacity-60 mb-6">Roll: ${student.roll} | Class: ${student.class}</p>
+                        <table class="excel-table">
+                            <thead><tr><th>Date</th><th>Subject</th><th>Score</th></tr></thead>
+                            <tbody>${res.map(r => `<tr><td>${r.date}</td><td class="font-bold">${r.subject}</td><td class="font-black">${r.ob}/${r.tot}</td></tr>`).join('')}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
         }
 
-        async function removeItem(type, idx) {
-            if(!confirm("Are you sure?")) return;
-            if(type === 'student') db_students.splice(idx, 1);
-            else if(type === 'teacher') db_teachers.splice(idx, 1);
-            else if(type === 'result') db_results.splice(idx, 1);
-            await saveAll(); await pullAll();
-        }
-
-        function logout() { 
-            if(isDataModified && !confirm("You have unsaved changes! Logout anyway?")) return;
-            sessionUser = null; 
-            isDataModified = false;
-            refreshUI(); 
-        }
+        function logout() { if(isDataModified && !confirm("Changes not saved. Logout?")) return; sessionUser = null; isDataModified=false; refreshUI(); }
         
+        // INITIAL LOAD
         pullAll();
     </script>
 </body>
