@@ -177,7 +177,6 @@
             } else document.getElementById('student-view').classList.remove('hidden');
         }
 
-        // --- ADMIN: MANAGE RESULTS (FULL AUTHORITY) ---
         function renderTask(task) {
             const area = document.getElementById('task-display-area');
             if(task === 'manage-results') {
@@ -198,6 +197,30 @@
                 area.innerHTML = `<div class="max-w-md mx-auto"><h3 class="font-black mb-4 uppercase text-center">Register Teacher</h3><input id="t-name" placeholder="Name" class="form-input mb-3"><input id="t-pass" type="password" placeholder="Pass" class="form-input mb-3"><select id="t-class" class="form-input mb-3"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select><select id="t-sub" class="form-input mb-4">${db_subjects.map(s => `<option>${s}</option>`).join('')}</select><button onclick="saveTeacher()" class="w-full btn-purple p-4 rounded-xl">ADD</button></div>`;
             } else if(task === 'directory') {
                 area.innerHTML = db_students.map((s,i) => `<div class="p-4 border rounded-2xl mb-2 flex justify-between items-center bg-gray-50"><div><b>${s.name}</b> (${s.roll})</div><button onclick="removeItem('student',${i})" class="text-red-500 font-bold uppercase text-[10px]">Delete</button></div>`).join('');
+            } else if(task === 'teacher-reg') {
+                area.innerHTML = `<h3 class="font-black mb-6 uppercase text-purple-900">Manage Teacher Credentials</h3>` + 
+                db_teachers.map((t,i) => `
+                    <div class="p-5 border-2 border-purple-50 rounded-2xl mb-3 flex flex-wrap justify-between items-center bg-white shadow-sm">
+                        <div>
+                            <p class="font-black text-purple-900">${t.name}</p>
+                            <p class="text-[10px] opacity-50 font-bold">PASS: ${t.pass}</p>
+                            <p class="text-[9px] bg-purple-100 px-2 py-0.5 rounded-full inline-block mt-1 uppercase font-black">${t.auth[0].class} - ${t.auth[0].subject}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="changeTeacherPass(${i})" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Change Pass</button>
+                            <button onclick="removeItem('teacher',${i})" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Remove</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function changeTeacherPass(idx) {
+            const newPass = prompt("Enter New Password for " + db_teachers[idx].name + ":");
+            if(newPass) {
+                db_teachers[idx].pass = newPass;
+                await saveAll();
+                renderTask('teacher-reg');
             }
         }
 
@@ -235,7 +258,6 @@
             if(idx > -1) { db_results.splice(idx, 1); await saveAll(); filterResults(); }
         }
 
-        // --- STUDENT PORTAL ---
         function getStudentResults() {
             const roll = document.getElementById('query-roll').value, cls = document.getElementById('query-class').value, selectedSub = document.getElementById('query-subject').value;
             const student = db_students.find(s => s.roll === roll && s.class === cls);
@@ -268,23 +290,17 @@
             document.getElementById('result-timeline').innerHTML = html;
         }
 
-        // --- TEACHER: LOCK LOGIC IMPLEMENTED HERE ---
         function loadBulkList() {
             const matrix = document.getElementById('teacher-matrix').value;
             const date = document.getElementById('test-date').value;
             const warning = document.getElementById('lock-warning');
             const saveBtn = document.getElementById('save-btn');
-            
             if(!matrix || !date) return;
             const [cls, sub] = matrix.split('|');
-            
-            // Check if results exist for this combination
             const existing = db_results.filter(r => r.class === cls && r.subject === sub && r.date === date);
             const isLocked = existing.length > 0;
-
             warning.classList.toggle('hidden', !isLocked);
             saveBtn.disabled = isLocked;
-
             const list = db_students.filter(s => s.class === cls && s.subjects.includes(sub));
             document.getElementById('bulk-student-body').innerHTML = list.map(s => {
                 const prev = existing.find(r => r.roll === s.roll);
@@ -307,7 +323,6 @@
             const matrix = document.getElementById('teacher-matrix').value, date = document.getElementById('test-date').value, total = document.getElementById('marks-tot').value;
             const [cls, sub] = matrix.split('|');
             const inputs = document.querySelectorAll('.bulk-mark-input');
-            
             inputs.forEach(input => {
                 let val = input.value.trim().toUpperCase();
                 if(val !== "") db_results.push({ roll: input.dataset.roll, name: input.dataset.name, class: cls, subject: sub, ob: val, tot: total, date: date, teacher: sessionUser.name });
@@ -317,7 +332,6 @@
             loadBulkList();
         }
 
-        // --- CORE FUNCTIONS ---
         async function saveStudent() {
             const n = document.getElementById('s-name').value, r = document.getElementById('s-roll').value, c = document.getElementById('s-class').value;
             const subs = Array.from(document.querySelectorAll('input[name="s-subs"]:checked')).map(el => el.value);
@@ -325,14 +339,20 @@
         }
         async function saveTeacher() {
             const n = document.getElementById('t-name').value, p = document.getElementById('t-pass').value, c = document.getElementById('t-class').value, s = document.getElementById('t-sub').value;
-            if(n && p) { db_teachers.push({name:n, pass:p, auth:[{class:c, subject:s}]}); await saveAll(); alert("Done"); }
+            if(n && p) { db_teachers.push({name:n, pass:p, auth:[{class:c, subject:s}]}); await saveAll(); alert("Teacher Added Successfully"); renderTask('teacher'); }
         }
-        async function removeItem(type, idx) { if(confirm("Delete?")) { if(type==='student') db_students.splice(idx,1); await saveAll(); pullAll(); } }
+        async function removeItem(type, idx) { 
+            if(confirm("Confirm deletion?")) { 
+                if(type==='student') db_students.splice(idx,1); 
+                else if(type==='teacher') db_teachers.splice(idx,1);
+                await saveAll(); 
+                pullAll(); 
+            } 
+        }
         function downloadCSV() {
             let csv = "Roll,Name,Class,Subject,Date,Score\n";
             db_results.forEach(r => csv += `${r.roll},${r.name},${r.class},${r.subject},${r.date},${r.ob}\n`);
             const blob = new Blob([csv], { type: 'text/csv' });
-            window.URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = window.URL.createObjectURL(blob); a.download = 'results.csv'; a.click();
         }
         function downloadPDF(id, name) {
