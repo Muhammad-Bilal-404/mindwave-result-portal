@@ -217,6 +217,75 @@
                     </div>
                 `).join('');
             }
+            else if(task === 'datesheet') {
+
+    // Group By Week
+    const grouped = {};
+    db.datesheet.forEach((d, i) => {
+        const key = d.week ? d.week : 'Uncategorized';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push({ ...d, index: i });
+    });
+
+    area.innerHTML = `
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-8 bg-gray-50 p-6 rounded-3xl">
+        <input type="date" id="ds-date" class="form-input">
+        <select id="ds-class" class="form-input">
+            <option>11th</option>
+            <option>12th</option>
+            <option>9th</option>
+            <option>10th</option>
+        </select>
+        <select id="ds-sub" class="form-input">
+            ${db.subs.map(s => `<option>${s}</option>`).join('')}
+        </select>
+        <input type="text" id="ds-week" placeholder="Week # / FLP / 2nd Half" class="form-input">
+        <input type="text" id="ds-syl" placeholder="Syllabus" class="form-input">
+        <button onclick="saveToDatesheet()" class="btn-purple md:col-span-5 p-3 mt-2">
+            ADD TO ACADEMIC CALENDAR
+        </button>
+    </div>
+
+    <div class="space-y-4">
+        ${Object.keys(grouped).map(week => `
+            <div class="border rounded-2xl overflow-hidden shadow-sm">
+                <button onclick="toggleWeek('${week}')" 
+                        class="w-full text-left p-5 bg-purple-900 text-white font-black uppercase tracking-wider">
+                    Week ${week}
+                </button>
+
+                <div id="week-${week}" class="hidden bg-white p-4">
+                    <table class="excel-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Class</th>
+                                <th>Subject</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${grouped[week].map(d => `
+                                <tr>
+                                    <td>${d.date}</td>
+                                    <td>${d.class}</td>
+                                    <td>${d.subject}</td>
+                                    <td>
+                                        <button onclick="deleteDS(${d.index})"
+                                            class="text-red-500 font-bold">
+                                            ✕
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `).join('')}
+    </div>
+    `;
+}
         }
 
         async function changeTeacherPass(idx) {
@@ -363,7 +432,12 @@
             const opt = { margin: 0.5, filename: name+'.pdf', html2canvas: { scale:2 }, jsPDF: { unit:'in', format:'letter', orientation:'portrait' } };
             html2pdf().set(opt).from(document.getElementById(id)).save();
         }
-        function logout() { sessionUser = null; refreshUI(); }
+        function logout() { sessionUser = null; refreshUI(); 
+        }
+        function toggleWeek(week) {
+            const el = document.getElementById('week-' + week);
+            el.classList.toggle('hidden');
+        }
         pullAll();
     </script>
 </body>
