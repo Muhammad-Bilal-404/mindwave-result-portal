@@ -67,6 +67,7 @@
                     <button onclick="renderTask('subjects')" class="p-4 bg-purple-900 text-white rounded-2xl font-black text-[9px] uppercase shadow-lg">Subjects</button>
                     <button onclick="renderTask('directory')" class="p-4 bg-purple-50 rounded-2xl font-black text-[9px] uppercase text-purple-900">Student Reg</button>
                     <button onclick="renderTask('teacher-reg')" class="p-4 bg-purple-50 rounded-2xl font-black text-[9px] uppercase text-purple-900">Teacher Reg</button>
+                    <button onclick="renderTask('datesheet')" class="p-4 bg-emerald-50 text-emerald-700 rounded-2xl font-black text-[9px] uppercase border border-emerald-100">Datesheet</button>
                     <button onclick="renderTask('manage-results')" class="p-4 bg-purple-100 rounded-2xl font-black text-[9px] uppercase text-purple-900 border border-purple-200">Manage Results</button>
                 </div>
                 <div id="task-display-area" class="p-6 bg-white rounded-3xl border border-purple-100 min-h-[400px]"></div>
@@ -99,7 +100,20 @@
                     </div>
                 </div>
             </div>
+            <div class="lg:col-span-4 mb-6">
+    <div class="glass-panel p-6 rounded-[2rem] border-l-8 border-purple-900 shadow-lg bg-gradient-to-r from-white to-purple-50">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h3 class="text-xs font-black text-purple-900 uppercase tracking-widest">My Weekly Schedule</h3>
+                <p id="current-week-label" class="text-[10px] font-bold text-gray-400 uppercase">Detecting current week...</p>
+            </div>
+            <span class="bg-purple-900 text-white text-[9px] px-3 py-1 rounded-full font-black uppercase">Live Schedule</span>
         </div>
+        <div id="teacher-weekly-list" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            </div>
+    </div>
+</div>
+    </div>
 
         <div id="student-view" class="max-w-2xl mx-auto">
             <div class="glass-panel p-10 rounded-[3rem] border-t-[12px] border-purple-900">
@@ -108,6 +122,22 @@
                     <div class="grid grid-cols-2 gap-3">
                         <input type="text" id="query-roll" placeholder="Roll No" class="form-input text-center py-4 text-lg">
                         <select id="query-class" class="form-input text-center"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select>
+                        <select id="query-week" class="form-input text-center">
+                    <option value="">All Weeks</option>
+                    <option value="1">Week 1</option>
+                    <option value="2">Week 2</option>
+                    <option value="3">Week 3</option>
+                    <option value="4">Week 4</option>
+                    <option value="5">Week 5</option>
+                    <option value="6">Week 6</option>
+                    <option value="7">Week 7</option>
+                    <option value="8">Week 8</option>
+                    <option value="9">Week 9</option>
+                    <option value="10">Week 10</option>
+                    <option value="11">Week 11</option>
+                    <option value="12">Week 12</option>
+                    <option value="FLP">Full Length Papers</option>
+                </select>
                     </div>
                     <select id="query-subject" class="form-input text-center">
                         <option value="">Full Report (Summary)</option>
@@ -136,31 +166,36 @@
                 return method === 'GET' ? (await res.json() || []) : true;
             } catch (e) { return []; }
         }
-
+        let db_datesheet = [];
         async function pullAll() {
-            showLoader(true);
-            db_students = await cloudSync('mw_students') || [];
-            db_teachers = await cloudSync('mw_teachers') || [];
-            db_results = await cloudSync('mw_results') || [];
-            db_subjects = await cloudSync('mw_subjects') || [];
-            if(db_subjects.length === 0) db_subjects = ["Physics", "Chemistry", "Math", "English"];
-            
-            const subFilter = document.getElementById('query-subject');
-            if(subFilter) subFilter.innerHTML = '<option value="">Full Report (Summary)</option>' + db_subjects.map(s => `<option value="${s}">${s}</option>`).join('');
-            
-            refreshUI();
-            showLoader(false);
-        }
+    showLoader(true);
+    db_students = await cloudSync('mw_students') || [];
+    db_teachers = await cloudSync('mw_teachers') || [];
+    db_results = await cloudSync('mw_results') || [];
+    db_subjects = await cloudSync('mw_subjects') || [];
+    // ADD THIS LINE
+    db_datesheet = await cloudSync('mw_datesheet') || []; 
+    
+    if(db_subjects.length === 0) db_subjects = ["Physics", "Chemistry", "Math", "English"];
+    
+    const subFilter = document.getElementById('query-subject');
+    if(subFilter) subFilter.innerHTML = '<option value="">Full Report (Summary)</option>' + db_subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+    
+    refreshUI();
+    showLoader(false);
+}
 
         async function saveAll() {
-            showLoader(true);
-            await cloudSync('mw_students', db_students, 'PUT');
-            await cloudSync('mw_teachers', db_teachers, 'PUT');
-            await cloudSync('mw_results', db_results, 'PUT');
-            await cloudSync('mw_subjects', db_subjects, 'PUT');
-            isDataModified = false;
-            showLoader(false);
-        }
+    showLoader(true);
+    await cloudSync('mw_students', db_students, 'PUT');
+    await cloudSync('mw_teachers', db_teachers, 'PUT');
+    await cloudSync('mw_results', db_results, 'PUT');
+    await cloudSync('mw_subjects', db_subjects, 'PUT');
+    // ADD THIS LINE
+    await cloudSync('mw_datesheet', db_datesheet, 'PUT'); 
+    isDataModified = false;
+    showLoader(false);
+}
 
         function switchTab(t) { sessionUser = null; refreshUI(); }
         function loginAs(role) {
@@ -173,16 +208,44 @@
         }
 
         function refreshUI() {
-            document.querySelectorAll('#admin-view, #teacher-view, #student-view').forEach(v => v.classList.add('hidden'));
-            if(sessionUser?.type === 'admin') document.getElementById('admin-view').classList.remove('hidden');
-            else if(sessionUser?.type === 'teacher') {
-                document.getElementById('teacher-view').classList.remove('hidden');
-                document.getElementById('teacher-matrix').innerHTML = sessionUser.auth.map(a => `<option value="${a.class}|${a.subject}">${a.class} - ${a.subject}</option>`).join('');
-            } else document.getElementById('student-view').classList.remove('hidden');
-        }
+    document.querySelectorAll('#admin-view, #teacher-view, #student-view').forEach(v => v.classList.add('hidden'));
+    
+    if(sessionUser?.type === 'admin') {
+        document.getElementById('admin-view').classList.remove('hidden');
+    } 
+    else if(sessionUser?.type === 'teacher') {
+        document.getElementById('teacher-view').classList.remove('hidden');
+        document.getElementById('teacher-matrix').innerHTML = sessionUser.auth.map(a => `<option value="${a.class}|${a.subject}">${a.class} - ${a.subject}</option>`).join('');
+        
+        // --- ADD THESE TWO CALLS ---
+        renderTeacherWeeklySchedule();
+        checkTeacherNotifications(); 
+    } 
+    else {
+        document.getElementById('student-view').classList.remove('hidden');
+    }
+}
 
         function renderTask(task) {
             const area = document.getElementById('task-display-area');
+            if(task === 'subjects') {
+        area.innerHTML = `
+            <div class="max-w-md mx-auto">
+                <h3 class="font-black mb-4 uppercase text-center text-purple-900">Manage Subjects</h3>
+                <div class="flex gap-2 mb-6">
+                    <input id="new-subject-name" placeholder="e.g. Biology" class="form-input">
+                    <button onclick="addSubject()" class="btn-purple px-6 py-2 rounded-xl text-[10px]">ADD</button>
+                </div>
+                <div class="space-y-2">
+                    ${db_subjects.map((s, i) => `
+                        <div class="flex justify-between items-center p-3 bg-purple-50 rounded-xl border border-purple-100">
+                            <span class="font-bold text-purple-900">${s}</span>
+                            <button onclick="removeSubject(${i})" class="text-red-500 font-black text-xs">✕</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+    }
             if(task === 'manage-results') {
                 area.innerHTML = `
                     <div class="mb-6 grid grid-cols-2 md:grid-cols-5 gap-2 items-end">
@@ -217,74 +280,55 @@
                     </div>
                 `).join('');
             }
-            else if(task === 'datesheet') {
+            if(task === 'datesheet') {
+        area.innerHTML = `
+        <div class="flex gap-4 mb-6 border-b pb-4">
+            <button onclick="switchDSMode('filter')" id="btn-ds-filter" class="text-xs font-black uppercase text-purple-900 border-b-2 border-purple-900 pb-1">View & Filter</button>
+            <button onclick="switchDSMode('bulk')" id="btn-ds-bulk" class="text-xs font-black uppercase text-gray-400 hover:text-purple-900 pb-1">Bulk Upload</button>
+        </div>
 
-    // Group By Week
-    const grouped = {};
-    db.datesheet.forEach((d, i) => {
-        const key = d.week ? d.week : 'Uncategorized';
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push({ ...d, index: i });
-    });
-
-    area.innerHTML = `
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-8 bg-gray-50 p-6 rounded-3xl">
-        <input type="date" id="ds-date" class="form-input">
-        <select id="ds-class" class="form-input">
-            <option>11th</option>
-            <option>12th</option>
-            <option>9th</option>
-            <option>10th</option>
-        </select>
-        <select id="ds-sub" class="form-input">
-            ${db.subs.map(s => `<option>${s}</option>`).join('')}
-        </select>
-        <input type="text" id="ds-week" placeholder="Week # / FLP / 2nd Half" class="form-input">
-        <input type="text" id="ds-syl" placeholder="Syllabus" class="form-input">
-        <button onclick="saveToDatesheet()" class="btn-purple md:col-span-5 p-3 mt-2">
-            ADD TO ACADEMIC CALENDAR
-        </button>
-    </div>
-
-    <div class="space-y-4">
-        ${Object.keys(grouped).map(week => `
-            <div class="border rounded-2xl overflow-hidden shadow-sm">
-                <button onclick="toggleWeek('${week}')" 
-                        class="w-full text-left p-5 bg-purple-900 text-white font-black uppercase tracking-wider">
-                    Week ${week}
-                </button>
-
-                <div id="week-${week}" class="hidden bg-white p-4">
-                    <table class="excel-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Class</th>
-                                <th>Subject</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${grouped[week].map(d => `
-                                <tr>
-                                    <td>${d.date}</td>
-                                    <td>${d.class}</td>
-                                    <td>${d.subject}</td>
-                                    <td>
-                                        <button onclick="deleteDS(${d.index})"
-                                            class="text-red-500 font-bold">
-                                            ✕
-                                        </button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+        <div id="ds-filter-view">
+            <div class="bg-purple-50 p-6 rounded-3xl border border-purple-100 mb-8">
+                <h4 class="text-[10px] font-black uppercase text-purple-900 mb-4">Quick Filters</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-[9px] font-bold opacity-40">CLASS</label>
+                        <select id="f-ds-class" onchange="filterDatesheet()" class="form-input">
+                            <option value="">All Classes</option>
+                            <option>11th</option><option>12th</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold opacity-40">WEEK</label>
+                        <select id="f-ds-week" onchange="filterDatesheet()" class="form-input">
+                            <option value="">All Weeks</option>
+                            ${[...new Set(db_datesheet.map(d => d.week))].sort().map(w => `<option>${w}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold opacity-40">SUBJECT</label>
+                        <select id="f-ds-sub" onchange="filterDatesheet()" class="form-input"></select>
+                    </div>
                 </div>
             </div>
-        `).join('')}
-    </div>
-    `;
+            <div id="datesheet-list-container" class="space-y-4"></div>
+        </div>
+
+        <div id="ds-bulk-view" class="hidden">
+            <div class="bg-white p-6 rounded-3xl border-2 border-dashed border-purple-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-xs font-black text-purple-900 uppercase">Paste Excel Data</h4>
+                    <button onclick="if(confirm('Wipe current datesheet?')) { db_datesheet=[]; saveAll(); renderTask('datesheet'); }" class="text-[9px] text-red-500 font-bold uppercase">Clear All Data</button>
+                </div>
+                <p class="text-[10px] text-gray-500 mb-4 italic">Columns needed: Date | Day | Subject | Test# | Week | Class</p>
+                <textarea id="bulk-ds-input" rows="10" class="form-input font-mono text-[11px] mb-4" placeholder="2-Feb-26	Monday	English	1	1	12th"></textarea>
+                <button onclick="processBulkDS()" class="w-full btn-purple py-4 rounded-xl text-xs shadow-lg uppercase tracking-widest">Process & Save All</button>
+            </div>
+        </div>`;
+        
+        populateSubjectFilter();
+        filterDatesheet();
+    
 }
         }
 
@@ -313,6 +357,51 @@
                     return `<tr class="row-hover" onclick="showStudentDetail('${roll}')"><td>${roll}</td><td class="font-black text-purple-900">${sInfo.name}</td><td>${sInfo.class}</td><td>${count} Tests</td><td class="text-blue-600 font-bold text-[10px]">OPEN</td></tr><tr id="detail-${roll}" class="hidden bg-slate-50"><td colspan="5" id="detail-box-${roll}" class="p-6"></td></tr>`;
                 }).join('')}</tbody></table>`;
         }
+        function renderTeacherWeeklySchedule() {
+    const container = document.getElementById('teacher-weekly-list');
+    const label = document.getElementById('current-week-label');
+    if (!container || !sessionUser) return;
+
+    // 1. Get Today's Date String (e.g., "2-Mar-26")
+    const today = new Date();
+    const day = today.getDate();
+    const month = today.toLocaleString('default', { month: 'short' });
+    const year = today.getFullYear().toString().slice(-2);
+    const todayStr = `${day}-${month}-${year}`;
+
+    // 2. Determine the "Running Week" from db_datesheet
+    const currentEntry = db_datesheet.find(d => d.date === todayStr);
+    const activeWeek = currentEntry ? currentEntry.week : "1"; // Default to 1 if today isn't found
+    
+    label.innerText = `Week ${activeWeek} | Overview`;
+
+    // 3. Filter datesheet for this week AND this teacher's auth
+    const weeklyTests = db_datesheet.filter(d => {
+        const isThisWeek = d.week === activeWeek;
+        const isMyAuth = sessionUser.auth.some(a => a.class === d.class && a.subject === d.subject);
+        return isThisWeek && isMyAuth;
+    });
+
+    if (weeklyTests.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-[10px] text-gray-400 italic">No tests scheduled for your subjects this week.</p>`;
+        return;
+    }
+
+    // 4. Render cards
+    container.innerHTML = weeklyTests.map(t => {
+        const isToday = t.date === todayStr;
+        return `
+            <div class="p-3 rounded-2xl border ${isToday ? 'border-purple-900 bg-purple-100 shadow-md' : 'border-gray-100 bg-white'}">
+                <p class="text-[9px] font-black ${isToday ? 'text-purple-900' : 'text-gray-400'} uppercase">${t.day}</p>
+                <p class="text-[11px] font-black text-purple-900">${t.subject}</p>
+                <div class="flex justify-between items-center mt-2">
+                    <span class="text-[9px] font-bold opacity-60">${t.class}</span>
+                    <span class="text-[9px] font-black bg-white px-2 py-0.5 rounded-lg border">T#${t.test}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
         function showStudentDetail(roll) {
             const row = document.getElementById(`detail-${roll}`);
@@ -404,7 +493,85 @@
             alert("Results Locked & Uploaded!");
             loadBulkList();
         }
+        function filterDatesheet() {
+    const fClass = document.getElementById('f-ds-class').value;
+    const fWeek = document.getElementById('f-ds-week').value;
+    const fSub = document.getElementById('f-ds-sub').value;
+    const container = document.getElementById('datesheet-list-container');
 
+    let filtered = db_datesheet;
+    if(fClass) filtered = filtered.filter(d => d.class === fClass);
+    if(fWeek) filtered = filtered.filter(d => d.week === fWeek);
+    if(fSub) filtered = filtered.filter(d => d.subject.includes(fSub));
+
+    const grouped = {};
+    filtered.forEach((d, i) => {
+        const key = d.week || 'Uncategorized';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push({ ...d, originalIndex: i });
+    });
+
+    container.innerHTML = Object.keys(grouped).length ? Object.keys(grouped).sort().map(week => `
+        <div class="border-2 border-purple-50 rounded-2xl overflow-hidden shadow-sm bg-white">
+            <button onclick="toggleWeek('${week}')" 
+                    class="w-full text-left p-4 flex justify-between items-center hover:bg-purple-50 transition">
+                <span class="font-black text-purple-900 uppercase text-xs">Week ${week}</span>
+                <span class="text-[10px] font-bold text-purple-400">View Schedule ▾</span>
+            </button>
+            <div id="week-${week}" class="hidden p-4 border-t border-purple-50">
+                <table class="excel-table">
+                    <thead>
+                        <tr><th>Date</th><th>Class</th><th>Subject</th><th>Test #</th><th>Result Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody>
+                        ${grouped[week].map(d => {
+                            // CHECK IF RESULT EXISTS IN DB_RESULTS
+                            // We match by Date, Subject, and Class
+                            const resultExists = db_results.some(r => 
+                                r.date === d.date && 
+                                r.subject === d.subject && 
+                                r.class === d.class
+                            );
+
+                            const statusHTML = resultExists 
+                                ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[9px] font-black uppercase italic">✓ Uploaded</span>`
+                                : `<span class="bg-gray-100 text-gray-400 px-2 py-1 rounded text-[9px] font-bold uppercase">Pending</span>`;
+
+                            return `
+                            <tr>
+                                <td>${d.date}</td>
+                                <td class="font-bold text-blue-600">${d.class}</td>
+                                <td class="font-black text-purple-900">${d.subject}</td>
+                                <td><span class="bg-purple-100 px-2 py-1 rounded text-[10px] font-bold">${d.test}</span></td>
+                                <td>${statusHTML}</td>
+                                <td><button onclick="deleteDS(${d.originalIndex})" class="text-red-400">✕</button></td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `).join('') : `<div class="text-center py-10 text-gray-400 italic">No matches found for selected filters</div>`;
+}
+
+function populateSubjectFilter() {
+    const subjectSelect = document.getElementById('f-ds-sub');
+    if (!subjectSelect) return;
+
+    // 1. Extract all unique subjects from the datesheet array
+    const uniqueSubjects = [...new Set(db_datesheet.map(item => item.subject))].sort();
+
+    // 2. Clear current options and add the "All" default
+    subjectSelect.innerHTML = '<option value="">All Subjects</option>';
+
+    // 3. Add each unique subject as an option
+    uniqueSubjects.forEach(sub => {
+        const option = document.createElement('option');
+        option.value = sub;
+        option.textContent = sub;
+        subjectSelect.appendChild(option);
+    });
+}
         async function saveStudent() {
             const n = document.getElementById('s-name').value, r = document.getElementById('s-roll').value, c = document.getElementById('s-class').value;
             const subs = Array.from(document.querySelectorAll('input[name="s-subs"]:checked')).map(el => el.value);
@@ -422,6 +589,54 @@
                 pullAll(); 
             } 
         }
+        async function saveToDatesheet() {
+    const date = document.getElementById('ds-date').value;
+    const day = document.getElementById('ds-day').value;
+    const sub = document.getElementById('ds-sub').value;
+    const test = document.getElementById('ds-test').value;
+    const week = document.getElementById('ds-week-num').value;
+
+    if(!date || !test || !week) return alert("Please fill Date, Test #, and Week Number");
+
+    db_datesheet.push({
+        date: date,
+        day: day,
+        subject: sub,
+        test: test,
+        week: week
+    });
+
+    await saveAll();
+    renderTask('datesheet');
+}
+
+async function deleteDS(index) {
+    if(confirm("Delete this entry?")) {
+        db_datesheet.splice(index, 1);
+        await saveAll();
+        renderTask('datesheet');
+    }
+}
+        async function addSubject() {
+    const input = document.getElementById('new-subject-name');
+    const val = input.value.trim();
+    if(val && !db_subjects.includes(val)) {
+        db_subjects.push(val);
+        await saveAll(); // Syncs to Firebase
+        renderTask('subjects'); // Refresh the list
+    } else {
+        alert("Subject empty or already exists!");
+    }
+}
+
+async function removeSubject(idx) {
+    if(confirm("Removing a subject will not delete existing results but may affect new entries. Continue?")) {
+        db_subjects.splice(idx, 1);
+        await saveAll();
+        renderTask('subjects');
+    }
+}
+
         function downloadCSV() {
             let csv = "Roll,Name,Class,Subject,Date,Score\n";
             db_results.forEach(r => csv += `${r.roll},${r.name},${r.class},${r.subject},${r.date},${r.ob}\n`);
@@ -434,10 +649,38 @@
         }
         function logout() { sessionUser = null; refreshUI(); 
         }
-        function toggleWeek(week) {
-            const el = document.getElementById('week-' + week);
-            el.classList.toggle('hidden');
+        async function processBulkDS() {
+    const rawData = document.getElementById('bulk-ds-input').value.trim();
+    if(!rawData) return alert("Please paste data first!");
+
+    const rows = rawData.split('\n');
+    let addedCount = 0;
+
+    rows.forEach(row => {
+        const cols = row.split('\t'); // Splits by Tab (Excel format)
+        if(cols.length >= 5) {
+            db_datesheet.push({
+                date: cols[0].trim(),
+                day: cols[1].trim(),
+                subject: cols[2].trim(),
+                test: cols[3].trim(),
+                week: cols[4].trim(),
+                class: cols[5] ? cols[5].trim() : "12th"
+            });
+            addedCount++;
         }
+    });
+        if(addedCount > 0) {
+        await saveAll();
+        alert(`Successfully imported ${addedCount} entries!`);
+        renderTask('datesheet');
+    } else {
+        alert("Error: Ensure you copied the data correctly from Excel (Tabs as separators).");
+    }}
+        function toggleWeek(week) {
+    const el = document.getElementById(`week-${week}`);
+    el.classList.toggle('hidden');
+}
         pullAll();
     </script>
 </body>
