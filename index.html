@@ -440,104 +440,103 @@
             if(idx > -1) { db_results.splice(idx, 1); await saveAll(); filterResults(); }
         }
 
-        function getStudentResults() {
-    const roll = document.getElementById('query-roll').value;
+ function getStudentResults() {
+    const roll = document.getElementById('query-roll').value.trim();
     const cls = document.getElementById('query-class').value;
     const selectedSub = document.getElementById('query-subject').value;
-    const selectedWeek = document.getElementById('query-week').value;
+    const selectedWeek = document.getElementById('query-week').value; // e.g., "1"
 
     const student = db_students.find(s => s.roll === roll && s.class === cls);
     if (!student) return alert("Student not found.");
 
-    // Start with all results for this student
     let res = db_results.filter(r => r.roll === roll);
 
-    // --- LOGIC: WEEK FILTERING ---
+    // --- FIXED WEEK LOGIC (Handling "w1" vs "1") ---
     if (selectedWeek !== "") {
-        // 1. Get all valid dates for this Week + Class from the datesheet
         const datesInWeek = db_datesheet
-            .filter(d => String(d.week) === String(selectedWeek) && d.class === cls)
-            .map(d => d.date.trim()); // Matches "2-Feb-26"
+            .filter(d => {
+                // Remove 'w' from the stored week (w1 -> 1) to compare with dropdown
+                const weekNum = String(d.week).toLowerCase().replace('w', '');
+                return weekNum === String(selectedWeek) && d.class === cls;
+            })
+            .map(d => d.date.trim().toLowerCase());
 
-        // 2. Filter results by checking if their date exists in that week
         res = res.filter(r => {
-            let resultDate = r.date;
-
-            // Convert YYYY-MM-DD to D-Mon-YY if necessary to match the schedule images
-            if (resultDate.includes('-') && resultDate.split('-')[0].length === 4) {
-                const d = new Date(resultDate);
+            let rDate = r.date.trim().toLowerCase();
+            // Standardize Date Format (YYYY-MM-DD to D-Mon-YY)
+            if (rDate.includes('-') && rDate.split('-')[0].length === 4) {
+                const d = new Date(rDate);
                 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                // Formats to "2-Feb-26"
-                resultDate = `${d.getDate()}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`;
+                rDate = `${d.getDate()}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`.toLowerCase();
             }
-            
-            return datesInWeek.includes(resultDate);
+            return datesInWeek.includes(rDate);
         });
     }
 
-    // --- LOGIC: SUBJECT FILTERING ---
     if (selectedSub) {
         res = res.filter(r => r.subject === selectedSub);
     }
 
-    // --- RENDERING THE MARKSHEET ---
-    let html = `<div id="report-card" class="bg-white border-4 border-purple-900 p-8 rounded-[2.5rem] shadow-2xl">
+    // --- CALCULATION LOGIC ---
+    let totalObtained = 0;
+    let totalMarks = 0;
+    res.forEach(r => {
+        totalObtained += (r.ob === 'A' ? 0 : parseFloat(r.ob || 0));
+        totalMarks += parseFloat(r.tot || 0);
+    });
+    const percentage = totalMarks > 0 ? ((totalObtained / totalMarks) * 100).toFixed(1) : "0.0";
+
+    // --- UI RENDERING ---
+    let html = `
+    <div id="report-card" class="bg-white border-4 border-purple-900 p-8 rounded-[2.5rem] shadow-2xl">
         <div class="flex justify-between items-start mb-6">
             <div>
                 <h2 class="text-2xl font-black text-purple-900 uppercase">${student.name}</h2>
-                <p class="font-bold text-gray-400">Roll: ${student.roll} | Class: ${student.class} ${selectedWeek ? '| Week: ' + selectedWeek : ''}</p>
+                <p class="font-bold text-gray-400">Roll: ${student.roll} | Class: ${student.class}</p>
             </div>
-            <button onclick="downloadPDF('report-card', 'Marksheet_${roll}')" class="bg-red-500 text-white px-4 py-2 rounded-xl text-[10px] font-black">PDF</button>
+            <div class="text-right">
+                <p class="text-[10px] font-black text-purple-400 uppercase leading-none">Overall Result</p>
+                <p class="text-3xl font-black text-purple-900">${percentage}%</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-purple-50 p-5 rounded-3xl border-2 border-purple-100">
+                <p class="text-[10px] font-black text-purple-400 uppercase mb-1">Obtained Marks</p>
+                <p class="text-2xl font-black text-purple-900">${totalObtained}</p>
+            </div>
+            <div class="bg-gray-50 p-5 rounded-3xl border-2 border-gray-100">
+                <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Total Marks</p>
+                <p class="text-2xl font-black text-gray-900">${totalMarks}</p>
+            </div>
         </div>`;
 
     if (res.length === 0) {
         html += `<div class="py-10 text-center text-red-500 font-bold italic border-2 border-dashed rounded-3xl">No results found for the selected criteria.</div>`;
-    } else if (selectedSub) {
-        // Single Subject View
-        let sOb = 0, sTot = 0;
-        html += `<h3 class="bg-purple-900 text-white p-3 rounded-xl font-black text-center mb-4 uppercase">${selectedSub} Progress</h3>
-        <table class="excel-table">
-            <thead><tr><th>Date</th><th>Obtained</th><th>Total</th></tr></thead>
-            <tbody>
-            ${res.map(r => {
-                let m = r.ob === 'A' ? 0 : parseInt(r.ob); 
-                sOb += m; 
-                sTot += parseInt(r.tot);
-                return `<tr><td>${r.date}</td><td class="${r.ob === 'A' ? 'status-absent' : ''} font-bold">${r.ob === 'A' ? 'ABSENT' : r.ob}</td><td>${r.tot}</td></tr>`;
-            }).join('')}
-            </tbody>
-            <tfoot class="bg-purple-100 font-black"><tr><td>SUBTOTAL</td><td>${sOb}</td><td>${sTot}</td></tr></tfoot>
-        </table>`;
     } else {
-        // Full Summary View
-        let gOb = 0, gTot = 0;
-        html += `<h3 class="bg-purple-900 text-white p-3 rounded-xl font-black text-center mb-4 uppercase">Academic Summary</h3>
-        <table class="excel-table mb-6">
-            <thead><tr><th>Subject</th><th>Obtained</th><th>Total</th></tr></thead>
-            <tbody>`;
-        
-        db_subjects.forEach(s => {
-            const subRes = res.filter(r => r.subject === s);
-            if (subRes.length > 0) {
-                let sOb = subRes.reduce((a, b) => a + (b.ob === 'A' ? 0 : parseInt(b.ob)), 0);
-                let sTot = subRes.reduce((a, b) => a + parseInt(b.tot), 0);
-                gOb += sOb; gTot += sTot;
-                html += `<tr><td class="font-bold">${s}</td><td>${sOb}</td><td>${sTot}</td></tr>`;
-            }
-        });
-
-        html += `</tbody>
-            <tfoot class="bg-purple-900 text-white font-black">
-                <tr><td>GRAND TOTAL</td><td>${gOb}</td><td>${gTot}</td></tr>
-            </tfoot>
-        </table>
-        <div class="bg-purple-50 p-6 rounded-2xl flex justify-between items-center">
-            <span class="font-black text-purple-900">WEEKLY / OVERALL PERCENTAGE</span>
-            <span class="text-3xl font-black">${((gOb / gTot) * 100 || 0).toFixed(1)}%</span>
-        </div>`;
+        html += `
+        <table class="excel-table">
+            <thead>
+                <tr><th>Date</th><th>Subject</th><th>Score</th></tr>
+            </thead>
+            <tbody>
+                ${res.map(r => `
+                    <tr>
+                        <td class="text-xs text-gray-500">${r.date}</td>
+                        <td class="font-bold text-purple-900">${r.subject}</td>
+                        <td class="font-black">${r.ob === 'A' ? '<span class="text-red-500">ABSENT</span>' : r.ob + ' / ' + r.tot}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>`;
     }
-    
-    html += `</div>`;
+
+    html += `
+        <button onclick="downloadPDF('report-card', 'Marksheet_${roll}')" class="w-full mt-6 bg-purple-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-transform">
+            Download Marksheet PDF
+        </button>
+    </div>`;
+
     document.getElementById('result-timeline').innerHTML = html;
 }
         function loadBulkList() {
