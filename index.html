@@ -175,6 +175,27 @@
         let sessionUser = null;
         let isDataModified = false;
 
+        // Pre-built Streams for Matric and Intermediate
+const ACADEMIC_SCHEMAS = {
+    // Matric Part 1 (9th Grade)
+    'M1_BIO': ['English', 'Urdu', 'Islamiat', 'Pakistan Studies', 'Mathematics', 'Physics', 'Chemistry', 'Biology'],
+    'M1_CS': ['English', 'Urdu', 'Islamiat', 'Pakistan Studies', 'Mathematics', 'Physics', 'Chemistry', 'Computer Science'],
+    
+    // Matric Part 2 (10th Grade)
+    'M2_BIO': ['English', 'Urdu', 'Islamiat', 'Pakistan Studies', 'Mathematics', 'Physics', 'Chemistry', 'Biology'],
+    'M2_CS': ['English', 'Urdu', 'Islamiat', 'Pakistan Studies', 'Mathematics', 'Physics', 'Chemistry', 'Computer Science'],
+
+    // Intermediate (11th & 12th)
+    'ICS_PHY': ['English', 'Urdu', 'Islamiat', 'Pakistan Studies', 'Mathematics', 'Physics', 'Computer Science'],
+    'ICS_STAT': ['English', 'Urdu', 'Islamiat', 'Pakistan Studies', 'Mathematics', 'Statistics', 'Computer Science'],
+    'PRE_ENG': ['English', 'Urdu', 'Islamiat', 'Pakistan Studies', 'Mathematics', 'Physics', 'Chemistry'],
+    'PRE_MED': ['English', 'Urdu', 'Islamiat', 'Pakistan Studies', 'Biology', 'Physics', 'Chemistry']
+};
+
+const MATRIC_COMPULSORY = ['English', 'Urdu', 'Islamiat', 'Pakistan Studies'];
+const MATRIC_ARTS_DEFAULT = ['English', 'Urdu', 'Islamiat', 'Pakistan Studies', 'General Mathematics', 'General Science'];
+const HARD_SCIENCES = ['Physics', 'Chemistry', 'Biology'];
+
         function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
         window.onbeforeunload = function() { if(isDataModified) return "Unsaved marks will be lost!"; };
 
@@ -278,8 +299,67 @@
                     <div id="results-excel-container"></div>
                 `;
                 filterResults();
-            } else if(task === 'enroll') {
-                area.innerHTML = `<div class="max-w-md mx-auto"><h3 class="font-black mb-4 uppercase text-center">Enroll Student</h3><input id="s-name" placeholder="Full Name" class="form-input mb-3"><input id="s-roll" placeholder="Roll" class="form-input mb-3"><select id="s-class" class="form-input mb-4"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select><div class="grid grid-cols-2 gap-2 mb-6">${db_subjects.map(s => `<label class="text-xs font-bold"><input type="checkbox" name="s-subs" value="${s}"> ${s}</label>`).join('')}</div><button onclick="saveStudent()" class="w-full btn-purple p-4 rounded-xl">SAVE</button></div>`;
+            } } else if(task === 'enroll') {
+            area.innerHTML = `
+                <div class="max-w-4xl mx-auto space-y-6">
+                    <div class="bg-white p-6 rounded-3xl border border-purple-100 shadow-sm">
+                        <h3 class="font-black mb-4 uppercase text-center text-purple-900 text-base">Enroll New Student</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                            <input id="s-name" placeholder="Full Name" class="form-input">
+                            <input id="s-roll" placeholder="Roll Number" class="form-input">
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                            <div>
+                                <label class="text-[9px] font-bold opacity-40 uppercase">Class Grade</label>
+                                <select id="s-class" class="form-input">
+                                    <option value="9th">Matric Part 1 (9th Grade)</option>
+                                    <option value="10th">Matric Part 2 (10th Grade)</option>
+                                    <option value="11th">11th Grade</option>
+                                    <option value="12th">12th Grade</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-bold text-purple-900 uppercase">Prebuilt Stream Schema</label>
+                                <select id="s-schema" onchange="applyStreamSchema(this.value)" class="form-input bg-purple-50 font-bold text-purple-900 border-purple-200">
+                                    <option value="">-- Custom / Manual Selection --</option>
+                                    
+                                    <optgroup label="Matric Part 1 (9th Grade)">
+                                        <option value="M1_BIO">9th Science (Biology Group)</option>
+                                        <option value="M1_CS">9th Science (Computer Science Group)</option>
+                                        <option value="M1_ARTS">9th Arts / General Group</option>
+                                    </optgroup>
+
+                                    <optgroup label="Matric Part 2 (10th Grade)">
+                                        <option value="M2_BIO">10th Science (Biology Group)</option>
+                                        <option value="M2_CS">10th Science (Computer Science Group)</option>
+                                        <option value="M2_ARTS">10th Arts / General Group</option>
+                                    </optgroup>
+
+                                    <optgroup label="Intermediate (11th & 12th)">
+                                        <option value="ICS_PHY">ICS (Physics Group)</option>
+                                        <option value="ICS_STAT">ICS (Statistics Group)</option>
+                                        <option value="PRE_ENG">F.Sc Pre-Engineering</option>
+                                        <option value="PRE_MED">F.Sc Pre-Medical</option>
+                                        <option value="ARTS">Arts / Humanities</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+
+                        <label class="text-[10px] font-black text-purple-900 uppercase block mb-2">
+                            Assign Enrolled Subjects (Must exist in Global Subject Database)
+                        </label>
+                        <div id="enroll-subjects-grid" class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 bg-purple-50 p-4 rounded-2xl border border-purple-100"></div>
+
+                        <button onclick="saveStudent()" class="w-full btn-purple py-3.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md">
+                            Save & Enroll Student
+                        </button>
+                    </div>
+                </div>
+            `;
+            renderSubjectCheckboxes();
             } else if(task === 'teacher') {
                 area.innerHTML = `<div class="max-w-md mx-auto"><h3 class="font-black mb-4 uppercase text-center">Register Teacher</h3><input id="t-name" placeholder="Name" class="form-input mb-3"><input id="t-pass" type="password" placeholder="Pass" class="form-input mb-3"><select id="t-class" class="form-input mb-3"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select><select id="t-sub" class="form-input mb-4">${db_subjects.map(s => `<option>${s}</option>`).join('')}</select><button onclick="saveTeacher()" class="w-full btn-purple p-4 rounded-xl">ADD</button></div>`;
             } else if(task === 'directory') {
@@ -360,6 +440,74 @@
                 renderTask('teacher-reg');
             }
         }
+        // Render subject checkboxes based on master list db_subjects
+function renderSubjectCheckboxes() {
+    const gridContainer = document.getElementById('enroll-subjects-grid');
+    if (!gridContainer) return;
+
+    if (!db_subjects || db_subjects.length === 0) {
+        gridContainer.innerHTML = `
+            <div class="col-span-full text-center text-red-500 font-bold p-3 border border-red-200 bg-red-50 rounded-xl">
+                ⚠️ No subjects found in database! Please add subjects in the "Manage Subjects" tab first.
+            </div>`;
+        return;
+    }
+
+    gridContainer.innerHTML = db_subjects.map(s => `
+        <label class="subject-item text-xs font-bold text-purple-900 flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-purple-100/50">
+            <input type="checkbox" name="s-subs" value="${s}" class="accent-purple-900 subject-checkbox"> ${s}
+        </label>
+    `).join('');
+}
+
+// Handle schema checks & custom combination overrides
+function applyStreamSchema(schemaName) {
+    const gridContainer = document.getElementById('enroll-subjects-grid');
+    if (!gridContainer) return;
+
+    // Reset visibility on all registered subjects
+    gridContainer.querySelectorAll('label.subject-item').forEach(label => label.classList.remove('hidden'));
+
+    const checkboxes = gridContainer.querySelectorAll('input[name="s-subs"]');
+    checkboxes.forEach(cb => cb.checked = false);
+
+    // Dynamic Filter for Matric Part 1 & Part 2 Arts
+    if (schemaName === 'M1_ARTS' || schemaName === 'M2_ARTS') {
+        checkboxes.forEach(cb => {
+            const subjectName = cb.value;
+            if (HARD_SCIENCES.includes(subjectName)) {
+                cb.closest('label.subject-item').classList.add('hidden'); // Exclude hard sciences
+            } else if (MATRIC_ARTS_DEFAULT.includes(subjectName)) {
+                cb.checked = true; // Auto-select standard Arts subjects present in db_subjects
+            }
+        });
+        return;
+    }
+
+    // Dynamic Filter for Intermediate Arts
+    if (schemaName === 'ARTS') {
+        checkboxes.forEach(cb => {
+            const subjectName = cb.value;
+            if (HARD_SCIENCES.includes(subjectName)) {
+                cb.closest('label.subject-item').classList.add('hidden');
+            } else if (MATRIC_COMPULSORY.includes(subjectName)) {
+                cb.checked = true;
+            }
+        });
+        return;
+    }
+
+    // Standard Science & ICS Schemas
+    if (ACADEMIC_SCHEMAS[schemaName]) {
+        const targetSubjects = ACADEMIC_SCHEMAS[schemaName];
+        checkboxes.forEach(cb => {
+            if (targetSubjects.includes(cb.value)) {
+                cb.checked = true;
+            }
+        });
+    }
+}
+        
 
         function filterResults() {
             const date = document.getElementById('filter-date').value, cls = document.getElementById('filter-class').value, sub = document.getElementById('filter-sub').value, tchr = document.getElementById('filter-teacher').value;
@@ -671,11 +819,36 @@ function populateSubjectFilter() {
         subjectSelect.appendChild(option);
     });
 }
-        async function saveStudent() {
-            const n = document.getElementById('s-name').value, r = document.getElementById('s-roll').value, c = document.getElementById('s-class').value;
-            const subs = Array.from(document.querySelectorAll('input[name="s-subs"]:checked')).map(el => el.value);
-            if(n && r) { db_students.push({name:n, roll:r, class:c, subjects: subs}); await saveAll(); renderTask('enroll'); }
-        }
+       async function saveStudent() {
+    const name = document.getElementById('s-name').value.trim();
+    const roll = document.getElementById('s-roll').value.trim();
+    const studentClass = document.getElementById('s-class').value;
+    
+    // Get all checked subjects
+    const selectedSubjects = Array.from(document.querySelectorAll('input[name="s-subs"]:checked'))
+                                  .map(el => el.value);
+
+    if (!name || !roll) {
+        alert("Please provide both Student Name and Roll Number.");
+        return;
+    }
+
+    if (selectedSubjects.length === 0) {
+        alert("Student must be enrolled in at least one subject. If the list is empty, add subjects to your database first.");
+        return;
+    }
+
+    // Save student
+    db_students.push({
+        name: name,
+        roll: roll,
+        class: studentClass,
+        subjects: selectedSubjects
+    });
+
+    await saveAll();
+    renderTask('enroll'); // Refresh screen
+}
         async function saveTeacher() {
             const n = document.getElementById('t-name').value, p = document.getElementById('t-pass').value, c = document.getElementById('t-class').value, s = document.getElementById('t-sub').value;
             if(n && p) { db_teachers.push({name:n, pass:p, auth:[{class:c, subject:s}]}); await saveAll(); alert("Teacher Added Successfully"); renderTask('teacher'); }
